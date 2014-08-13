@@ -8,14 +8,24 @@
 
 /* Begin PBXFileReference section */
 		9A368752199C101400F9329D /* candy.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = candy.py; sourceTree = "<group>"; };
+		9A368756199C248000F9329D /* LedBoard.ino */ = {isa = PBXFileReference; lastKnownFileType = text; path = LedBoard.ino; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		9A36874B199C0FED00F9329D = {
 			isa = PBXGroup;
 			children = (
+				9A368755199C248000F9329D /* LedBoard */,
 				9A368752199C101400F9329D /* candy.py */,
 			);
+			sourceTree = "<group>";
+		};
+		9A368755199C248000F9329D /* LedBoard */ = {
+			isa = PBXGroup;
+			children = (
+				9A368756199C248000F9329D /* LedBoard.ino */,
+			);
+			path = LedBoard;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

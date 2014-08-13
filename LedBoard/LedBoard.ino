@@ -11,21 +11,51 @@ int startled = 2;
 int numberofleds = 9;
 int numberofrows = 3;
 int numberofcolumns = 3;
+int randominput = 11;
+int actioninput = 12;
 // the setup routine runs once when you press reset:
 void setup() {                
   // initialize the digital pin as an output.
+  pinMode(randominput, INPUT);
+  pinMode(actioninput, INPUT);
+  
   int led = startled;
   while (led <= (startled+numberofleds)) {
     pinMode(led, OUTPUT);     
     led++;
  }
+ Serial.begin(9600);
 }
+
 
 // the loop routine runs over and over again forever:
 void loop() {
+  
+  int randomstate = digitalRead(randominput);
+  int actionstate = digitalRead(actioninput);
+  
+  if (actionstate == HIGH) {
+    doaction();
+  }
+  else {
+    if (randomstate ==  HIGH) {
+       //pick a random action
+    }
+  }  
+}
   //digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
-  outin(500);
-  outin(200);
+  /*outin(500);
+ */ 
+  
+//    shinebitleds(x);
+//    delay(100);               // wait for a second
+//    dimleds();    // turn the LED off by making the voltage LOW
+//    delay(100);               // wait for a second
+    
+
+void doaction ()
+{
+ outin(200);
   outin(150);
   for (int x=0; x<25 ;x++)
     outin(100);
@@ -39,13 +69,7 @@ void loop() {
   verticalwave();
   verticalwave();
   horizontalwave();
-//    shinebitleds(x);
-//    delay(100);               // wait for a second
-//    dimleds();    // turn the LED off by making the voltage LOW
-//    delay(100);               // wait for a second
-  
-}   
-
+}
 
 void outin (int patternspeed)
 {

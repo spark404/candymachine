@@ -5,6 +5,8 @@ import random
 import time
 import threading
 import pygame
+import subprocess
+from subprocess import PIPE
 
 import RPi.GPIO as GPIO
 
@@ -116,6 +118,9 @@ class SoundFxGenerator():
     BLEEP = 3
     
     def __init__(self):
+        # set audio output to the jack
+        process = subprocess.Popen(["amixer", "cset", "numid=3", "1"] , stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        process.wait()
         pygame.mixer.init()
         self.effect_siren = pygame.mixer.Sound("soundeffects/police_s.wav")
         self.effect_bubbles = pygame.mixer.Sound("soundeffects/Bubbling-SoundBible.com-1684132696.wav")

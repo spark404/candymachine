@@ -4,8 +4,9 @@ import logging
 import random
 import time
 import threading
+import pygame
 
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 class Ports():
     RELAY_1 = 18
@@ -52,32 +53,53 @@ def perform(self):
         pass
 
 class BubbleMachine(Action):
-    def __init__(self, ports, stop_event):
+    def __init__(self, ports, stop_event, soundfx):
         self.ports = ports
         self.stop_event = stop_event
+        self.soundfx = soundfx
 
     def perform(self):
         logging.info("BubbleMachine started")
-        
+       
+        self.soundfx.fx_start(SoundFxGenerator.BUBBLES) 
         self.ports.activate(Ports.BUBBLE_MACHINE)
         time.sleep(5)
         self.ports.deactivate(Ports.BUBBLE_MACHINE)
+        self.soundfx.fx_stop(SoundFxGenerator.BUBBLES) 
 
         logging.info("BubbleMachine stopped")
 
 class SmokeMachine(Action):
-    def __init__(self, ports, stop_event):
+    def __init__(self, ports, stop_event, soundfx):
         self.ports = ports
         self.stop_event = stop_event
+        self.soundfx = soundfx
     
     def perform(self):
         logging.info("SmokeMachine started")
         
+        self.soundfx.fx_start(SoundFxGenerator.SIREN) 
         self.ports.activate(Ports.RELAY_1)
         stop_event.wait(10)
         self.ports.deactivate(Ports.RELAY_1)
+        self.soundfx.fx_stop(SoundFxGenerator.SIREN) 
         
         logging.info("SmokeMachine stopped")
+
+class Bleeping(Action):
+    def __init__(self, ports, stop_event, soundfx):
+        self.ports = ports
+        self.stop_event = stop_event
+        self.soundfx = soundfx
+    
+    def perform(self):
+        logging.info("Bleep started")
+        
+        self.soundfx.fx_start(SoundFxGenerator.BLEEP) 
+        stop_event.wait(10)
+        self.soundfx.fx_stop(SoundFxGenerator.BLEEP) 
+        
+        logging.info("Bleep stopped")
 
 class Kahuna(Action):
     def __init__(self, ports):
@@ -88,6 +110,36 @@ class Kahuna(Action):
         stop_event.wait(10)
         logging.info("Kahuna stopped")
 
+class SoundFxGenerator():
+    BUBBLES = 1
+    SIREN = 2
+    BLEEP = 3
+    
+    def __init__(self):
+        pygame.mixer.init()
+        self.effect_siren = pygame.mixer.Sound("soundeffects/police_s.wav")
+        self.effect_bubbles = pygame.mixer.Sound("soundeffects/Bubbling-SoundBible.com-1684132696.wav")
+        self.effect_bleep = pygame.mixer.Sound("soundeffects/bleep_01.wav")
+
+    def __del__(self):
+        pygame.mixer.quit()
+
+    def fx_start(self, effect):
+        effect = self.__get_effect_by_id(effect)
+        effect.play(loops=-1)
+
+    def fx_stop(self, effect):
+        effect = self.__get_effect_by_id(effect)
+        effect.stop()
+
+    def __get_effect_by_id(self, id):
+        if id == self.BUBBLES:
+            return self.effect_bubbles
+        elif id == self.SIREN:
+            return self.effect_siren
+        elif id == self.BLEEP:
+            return self.effect_bleep
+
 if __name__ == "__main__":
     #logging.basicConfig(filename='/var/log/snoepjesmachine.log',
     #                    level=logging.DEBUG,
@@ -95,14 +147,16 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(message)s')
     
-    gpioPorts = FakePorts()
-    random.seed()
-    
+    gpioPorts = Ports()
+    soundfx = SoundFxGenerator()
     stop_event = threading.Event()
 
+    random.seed()
+    
     randomActions = []
-    randomActions.append(BubbleMachine(gpioPorts, stop_event))
-    randomActions.append(SmokeMachine(gpioPorts, stop_event))
+    randomActions.append(BubbleMachine(gpioPorts, stop_event, soundfx))
+    randomActions.append(SmokeMachine(gpioPorts, stop_event, soundfx))
+    randomActions.append(Bleeping(gpioPorts, stop_event, soundfx))
     
     lastAction = 0
     randomDeltaTime = 30 # Seconds

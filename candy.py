@@ -6,17 +6,21 @@ import time
 import threading
 import pygame
 import subprocess
+import sys
 from subprocess import PIPE
 
 import RPi.GPIO as GPIO
 
 class Ports():
-    OPTO_1 = 17
-    OPTO_2 = 21
-    RELAY_1 = 18
-    RELAY_2 = 23
-    BUBBLE_MACHINE = 25
-    KAHUNA_SWITCH = 22
+    RELAY_1        = 18 # OUT
+    SMOKE_MACHINE  = 18 # OUT
+    OPTO_1         = 21 # OUT
+    KAHUNA_SWITCH  = 22 # IN
+    RELAY_2        = 23 # OUT
+    KAHUNA_SLIDER  = 23 # OUT
+    BUBBLE_MACHINE = 25 # OUT
+    OPTO_2         = 27 # OUT
+    FRONT_LIGHTS   = 27 # OUT
     
     def __init__(self):
         # Initialize GPIO
@@ -30,9 +34,6 @@ class Ports():
         GPIO.setup(Ports.OPTO_2, GPIO.OUT)
   	GPIO.setup(Ports.KAHUNA_SWITCH, GPIO.IN)
     
-    def __del__(self):
-        GPIO.cleanup()
-
     def activate(self, port):
         GPIO.output(port, GPIO.HIGH)
 
@@ -115,16 +116,27 @@ class Bleeping(Action):
 class Kahuna(Action):
     def __init__(self, ports, stop_event, soundfx):
         self.ports = ports;
+        self.stop_event = stop_event
+        self.soundfx = soundfx
 
     def perform(self):
         logging.info("Kahuna started")
-        stop_event.wait(30)
+        self.soundfx.fx_play(SoundFxGenerator.OPERATIONAL) 
+        stop_event.wait(10)
+        self.ports.activate(Ports.KAHUNA_SLIDER)
+        stop_event.wait(1)
+        self.ports.deactivate(Ports.KAHUNA_SLIDER)
+        stop_event.wait(3)
+        self.ports.activate(Ports.KAHUNA_SLIDER)
+        stop_event.wait(1)
+        self.ports.deactivate(Ports.KAHUNA_SLIDER)
         logging.info("Kahuna stopped")
 
 class SoundFxGenerator():
     BUBBLES = 1
     SIREN = 2
     BLEEP = 3
+    OPERATIONAL = 4
     
     def __init__(self):
         # set audio output to the jack
@@ -134,8 +146,9 @@ class SoundFxGenerator():
         self.effect_siren = pygame.mixer.Sound("soundeffects/police_s.wav")
         self.effect_bubbles = pygame.mixer.Sound("soundeffects/Bubbling-SoundBible.com-1684132696.wav")
         self.effect_bleep = pygame.mixer.Sound("soundeffects/bleep_01.wav")
+        self.effect_operational = pygame.mixer.Sound("soundeffects/computer_operational.wav")
 
-    def __del__(self):
+    def cleanup(self):
         pygame.mixer.quit()
 
     def fx_start(self, effect):
@@ -145,6 +158,10 @@ class SoundFxGenerator():
     def fx_stop(self, effect):
         effect = self.__get_effect_by_id(effect)
         effect.stop()
+     
+    def fx_play(self, effect):
+        effect = self.__get_effect_by_id(effect)
+        effect.play(loops=0)
 
     def __get_effect_by_id(self, id):
         if id == self.BUBBLES:
@@ -153,12 +170,16 @@ class SoundFxGenerator():
             return self.effect_siren
         elif id == self.BLEEP:
             return self.effect_bleep
+        elif id == self.OPERATIONAL:
+            return self.effect_operational
 
 if __name__ == "__main__":
-    logging.basicConfig(filename='/var/log/snoepjesmachine.log',
-                        level=logging.DEBUG,
-                        format='%(asctime)s %(message)s')
+    #logging.basicConfig(filename='/var/log/snoepjesmachine.log',
+    #                    level=logging.DEBUG,
+    #                    format='%(asctime)s %(message)s')
     
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(message)s')
     gpioPorts = Ports()
     soundfx = SoundFxGenerator()
     stop_event = threading.Event()
@@ -178,41 +199,49 @@ if __name__ == "__main__":
     kahunaStarted = False
     actionThread = None
 
-    while True:
-        currentTime = time.time()
+    try:
+        while True:
+            currentTime = time.time()
 
-	if not gpioPorts.ishigh(Ports.KAHUNA_SWITCH) and kahunaFlag == False:
-            logging.info("Kahuna event starting")
-            kahunaFlag = True
-            if not actionThread == None and not kahunaStarted:
-                stop_event.set()
-                logging.info("Event set, waiting for action to die")
-                actionThread.join()
-                logging.info("Action died, clearing event")
-                stop_event.clear()
-            if not kahunaStarted:
-                actionThread = threading.Thread(target=kahuna.perform)
+    	    if not gpioPorts.ishigh(Ports.KAHUNA_SWITCH) and kahunaFlag == False:
+                logging.info("Kahuna event starting")
+                kahunaFlag = True
+                if not actionThread == None and not kahunaStarted:
+                    stop_event.set()
+                    logging.info("Event set, waiting for action to die")
+                    actionThread.join()
+                    logging.info("Action died, clearing event")
+                    stop_event.clear()
+                if not kahunaStarted:
+                    actionThread = threading.Thread(target=kahuna.perform)
+                    actionThread.start()
+                    kahunaStarted = True
+            elif gpioPorts.ishigh(Ports.KAHUNA_SWITCH) and kahunaFlag == True:
+                if not actionThread == None and actionThread.isAlive():
+                    logging.info("Kahuna still running, not clearing the flag")
+                else:
+                    logging.info("Kahuna event cleared")
+                    kahunaStarted = False
+                    kahunaFlag = False
+            elif ((currentTime - lastAction) > randomDeltaTime) and not kahunaFlag:
+                lastAction = time.time()
+                logging.info("Time for a random action")
+                action = random.randint(0, len(randomActions)-1)
+                actionThread = threading.Thread(target=randomActions[action].perform)
                 actionThread.start()
-                kahunaStarted = True
-        elif gpioPorts.ishigh(Ports.KAHUNA_SWITCH) and kahunaFlag == True:
-            if not actionThread == None and actionThread.isAlive():
-                logging.info("Kahuna still running, not clearing the flag")
-            else:
-                logging.info("Kahuna event cleared")
-                kahunaStarted = False
-                kahunaFlag = False
-        elif ((currentTime - lastAction) > randomDeltaTime) and not kahunaFlag:
-            lastAction = time.time()
-            logging.info("Time for a random action")
-            action = random.randint(0, len(randomActions)-1)
-            actionThread = threading.Thread(target=randomActions[action].perform)
-            actionThread.start()
-        
-        logging.debug("regular poll, kahunaFlag = %s", kahunaFlag  )
-        if not actionThread == None:
-            actionThread.join(1)
-            if not actionThread.isAlive():
-                actionThread = None
-        else:
+            
+            logging.debug("regular poll, kahunaFlag = %s", kahunaFlag  )
+            if not actionThread == None:
+                actionThread.join(1)
+                if not actionThread.isAlive():
+                    actionThread = None
             time.sleep(1)
-
+    except KeyboardInterrupt:
+        logging.info("Interrupted, cleanup and exit")
+        if not actionThread == None and actionThread.isAlive():
+            stop_event.set()
+            actionThread.join()
+        gpioPorts = None
+        GPIO.cleanup()
+        soundfx.cleanup()
+        sys.exit(1)

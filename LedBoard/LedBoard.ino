@@ -4,6 +4,8 @@ int numberofleds = 9;
 int numberofrows = 3;
 int numberofcolumns = 3;
 int actioninput = 12;
+long previousMillis = 0; 
+long interval = 1000;
 
 // the setup routine runs once when you press reset:
 void setup() {                
@@ -16,6 +18,7 @@ void setup() {
     led++;
  }
  Serial.begin(9600);
+ previousMillis = 0 -interval; //Hack to start blinking right away
 }
 
 
@@ -26,7 +29,42 @@ void loop() {
     doaction();
   }
   else {
-       //pick a random action
+    unsigned long currentMillis = millis();
+    if(currentMillis - previousMillis > interval) {
+      previousMillis = currentMillis;   
+      switch (random(4)) {  //pick a random action
+        case 1:
+          inout();
+          inout();
+          inout();
+          break;
+        case 2:
+          ledrun();
+          ledrun();
+          ledrun();
+          break;
+        case 3:
+          verticalwave();
+          verticalwave();
+          verticalwave();
+          break;
+        case 4:
+          outin(200);
+          outin(200);
+          outin(200);
+          break;
+        case 0:
+          horizontalwave();
+          horizontalwave();
+          horizontalwave();
+          break;
+        default:
+          horizontalwave();
+          horizontalwave();
+          horizontalwave();
+          break;
+        }
+      }
   }  
 }
 

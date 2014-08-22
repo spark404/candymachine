@@ -75,7 +75,7 @@ class BubbleMachine(Action):
        
         self.soundfx.fx_start(SoundFxGenerator.BUBBLES) 
         self.ports.activate(Ports.BUBBLE_MACHINE)
-        time.sleep(10)
+        time.sleep(180)
         self.ports.deactivate(Ports.BUBBLE_MACHINE)
         self.soundfx.fx_stop(SoundFxGenerator.BUBBLES) 
 
@@ -92,7 +92,7 @@ class SmokeMachine(Action):
         
         self.soundfx.fx_start(SoundFxGenerator.SIREN) 
         self.ports.activate(Ports.RELAY_1)
-        stop_event.wait(10)
+        stop_event.wait(30)
         self.ports.deactivate(Ports.RELAY_1)
         self.soundfx.fx_stop(SoundFxGenerator.SIREN) 
         
@@ -108,7 +108,7 @@ class Bleeping(Action):
         logging.info("Bleep started")
         
         self.soundfx.fx_start(SoundFxGenerator.BLEEP) 
-        stop_event.wait(10)
+        stop_event.wait(15)
         self.soundfx.fx_stop(SoundFxGenerator.BLEEP) 
         
         logging.info("Bleep stopped")
@@ -203,12 +203,13 @@ class SoundFxGenerator():
 
 
 if __name__ == "__main__":
-    #logging.basicConfig(filename='/var/log/snoepjesmachine.log',
-    #                    level=logging.DEBUG,
-    #                    format='%(asctime)s %(message)s')
-    
-    logging.basicConfig(level=logging.DEBUG,
+    logging.basicConfig(filename='/var/log/snoepjesmachine.log',
+                        level=logging.DEBUG,
                         format='%(asctime)s %(message)s')
+    
+    #logging.basicConfig(level=logging.DEBUG,
+    #                    format='%(asctime)s %(message)s')
+
     gpioPorts = Ports()
     soundfx = SoundFxGenerator()
     stop_event = threading.Event()
@@ -223,7 +224,7 @@ if __name__ == "__main__":
     kahuna = Kahuna(gpioPorts, stop_event, soundfx)
     
     lastAction = 0
-    randomDeltaTime = 30 # Seconds
+    randomDeltaTime = 30 * 60 # Seconds
     kahunaFlag = False
     kahunaStarted = False
     actionThread = None

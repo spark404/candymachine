@@ -1,22 +1,15 @@
-/*
-  Blink
-  Turns on an LED on for one second, then off for one second, repeatedly.
- 
-  This example code is in the public domain.
- */
- 
-// Pin 13 has an LED connected on most Arduino boards.
-// give it a name:
+
 int startled = 2;
 int numberofleds = 9;
 int numberofrows = 3;
 int numberofcolumns = 3;
-int randominput = 11;
 int actioninput = 12;
+long previousMillis = 0; 
+long interval = 1000;
+
 // the setup routine runs once when you press reset:
 void setup() {                
   // initialize the digital pin as an output.
-  pinMode(randominput, INPUT);
   pinMode(actioninput, INPUT);
   
   int led = startled;
@@ -25,50 +18,85 @@ void setup() {
     led++;
  }
  Serial.begin(9600);
+ previousMillis = 0 -interval; //Hack to start blinking right away
 }
 
 
 // the loop routine runs over and over again forever:
 void loop() {
-  
-  int randomstate = digitalRead(randominput);
   int actionstate = digitalRead(actioninput);
-  
   if (actionstate == HIGH) {
     doaction();
   }
   else {
-    if (randomstate ==  HIGH) {
-       //pick a random action
-    }
+    unsigned long currentMillis = millis();
+    if(currentMillis - previousMillis > interval) {
+      previousMillis = currentMillis;   
+      switch (random(4)) {  //pick a random action
+        case 1:
+          inout();
+          inout();
+          inout();
+          break;
+        case 2:
+          ledrun();
+          ledrun();
+          ledrun();
+          break;
+        case 3:
+          verticalwave();
+          verticalwave();
+          verticalwave();
+          break;
+        case 4:
+          outin(200);
+          outin(200);
+          outin(200);
+          break;
+        case 0:
+          horizontalwave();
+          horizontalwave();
+          horizontalwave();
+          break;
+        default:
+          horizontalwave();
+          horizontalwave();
+          horizontalwave();
+          break;
+        }
+      }
   }  
 }
-  //digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
-  /*outin(500);
- */ 
-  
-//    shinebitleds(x);
-//    delay(100);               // wait for a second
-//    dimleds();    // turn the LED off by making the voltage LOW
-//    delay(100);               // wait for a second
-    
+
 
 void doaction ()
 {
- outin(200);
-  outin(150);
-  for (int x=0; x<25 ;x++)
-    outin(100);
-  delay (1000);
   inout();
   inout();
   inout();
-  
   ledrun ();
   verticalwave();
   verticalwave();
   verticalwave();
   horizontalwave();
+  outin(200);
+  outin(150);
+  for (int x=0; x<25 ;x++)
+    outin(75);
+  int actionstate = digitalRead(actioninput);
+  while (actionstate == HIGH) {
+    arrow();
+    delay(500);
+    int actionstate = digitalRead(actioninput);
+  }
+}
+
+
+void arrow()
+{
+  shinebitleds(351);
+  delay (500);
+  dimleds();
 }
 
 void outin (int patternspeed)

@@ -121,8 +121,25 @@ class Kahuna(Action):
 
     def perform(self):
         logging.info("Kahuna started")
-        self.soundfx.fx_play(SoundFxGenerator.OPERATIONAL) 
+        self.ports.activate(Ports.LIGHTS)
+        self.soundfx.fx_play(SoundFxGenerator.HORN) 
         stop_event.wait(10)
+
+        self.ports.activate(Ports.SMOKE_MACHINE)
+        self.soundfx.fx_start(SoundFxGenerator.MACHINE) 
+        stop.event.wait(5)
+ 
+        self.soundfx.fx_start(SoundFxGenerator.BUBBLES) 
+        self.ports.activate(Ports.BUBBLE_MACHINE)
+        stop.event.wait(20)
+
+        self.ports.deactivate(Ports.BUBBLE_MACHINE)
+        self.soundfx.fx_stop(SoundFxGenerator.BUBBLES) 
+        self.soundfx.fx_play(SoundFxGenerator.HYDRAULICS) 
+        self.ports.deactivate(Ports.LIGHTS)
+  
+        stop.event.wait(3)
+        
         self.ports.activate(Ports.KAHUNA_SLIDER)
         stop_event.wait(1)
         self.ports.deactivate(Ports.KAHUNA_SLIDER)
@@ -130,13 +147,18 @@ class Kahuna(Action):
         self.ports.activate(Ports.KAHUNA_SLIDER)
         stop_event.wait(1)
         self.ports.deactivate(Ports.KAHUNA_SLIDER)
+
+        self.ports.deactivate(Ports.SMOKE_MACHINE)
+        self.soundfx.fx_stop(SoundFxGenerator.MACHINE) 
         logging.info("Kahuna stopped")
 
 class SoundFxGenerator():
     BUBBLES = 1
     SIREN = 2
     BLEEP = 3
-    OPERATIONAL = 4
+    HYDRAULIC = 4
+    MACHINE = 5
+    HORN = 6
     
     def __init__(self):
         # set audio output to the jack
@@ -146,7 +168,9 @@ class SoundFxGenerator():
         self.effect_siren = pygame.mixer.Sound("soundeffects/police_s.wav")
         self.effect_bubbles = pygame.mixer.Sound("soundeffects/Bubbling-SoundBible.com-1684132696.wav")
         self.effect_bleep = pygame.mixer.Sound("soundeffects/bleep_01.wav")
-        self.effect_operational = pygame.mixer.Sound("soundeffects/computer_operational.wav")
+        self.effect_hydraulic = pygame.mixer.Sound("soundeffects/12906__swelk__hydraul1.wav") # 8.2 seconds
+        self.effect_machine = pygame.mixer.Sound("soundeffects/30315__lg__industrial23.wav") # 1.3 seconds
+        self.effect_horn = pygame.mixer.Sound("soundeffects/244796__jarredgibb__war-of-the-worlds-horn-1.wav") # 14 sec
 
     def cleanup(self):
         pygame.mixer.quit()
@@ -170,8 +194,13 @@ class SoundFxGenerator():
             return self.effect_siren
         elif id == self.BLEEP:
             return self.effect_bleep
-        elif id == self.OPERATIONAL:
-            return self.effect_operational
+        elif id == self.HYDRAULIC:
+            return self.effect_hydraulic
+        elif id == self.MACHINE:
+            return self.effect_machine
+        elif id == self.HORN:
+            return self.effect_horn
+
 
 if __name__ == "__main__":
     #logging.basicConfig(filename='/var/log/snoepjesmachine.log',

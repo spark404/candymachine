@@ -4,6 +4,7 @@ int numberofleds = 9;
 int numberofrows = 3;
 int numberofcolumns = 3;
 int actioninput = 12;
+int actionactive = 13;
 long previousMillis = 0; 
 long interval = 1000;
 
@@ -11,6 +12,7 @@ long interval = 1000;
 void setup() {                
   // initialize the digital pin as an output.
   pinMode(actioninput, INPUT);
+  pinMode(actionactive, OUTPUT);
   
   int led = startled;
   while (led <= (startled+numberofleds)) {
@@ -18,6 +20,7 @@ void setup() {
     led++;
  }
  Serial.begin(9600);
+ digitalWrite(actionactive, LOW);
  previousMillis = 0 -interval; //Hack to start blinking right away
 }
 
@@ -71,6 +74,7 @@ void loop() {
 
 void doaction ()
 {
+  digitalWrite(actionactive, HIGH);
   inout();
   inout();
   inout();
@@ -89,6 +93,7 @@ void doaction ()
     delay(500);
     int actionstate = digitalRead(actioninput);
   }
+  digitalWrite(actionactive, LOW);
 }
 
 

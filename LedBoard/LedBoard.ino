@@ -5,8 +5,9 @@ int numberofrows = 3;
 int numberofcolumns = 3;
 int actioninput = 12;
 int actionactive = 13;
+int actionstate = LOW;
 long previousMillis = 0; 
-long interval = 1000;
+long interval = 10000;
 
 // the setup routine runs once when you press reset:
 void setup() {                
@@ -27,7 +28,7 @@ void setup() {
 
 // the loop routine runs over and over again forever:
 void loop() {
-  int actionstate = digitalRead(actioninput);
+  actionstate = digitalRead(actioninput);
   if (actionstate == HIGH) {
     doaction();
   }
@@ -87,11 +88,11 @@ void doaction ()
   outin(150);
   for (int x=0; x<25 ;x++)
     outin(75);
-  int actionstate = digitalRead(actioninput);
+  actionstate = digitalRead(actioninput);
   while (actionstate == HIGH) {
     arrow();
     delay(500);
-    int actionstate = digitalRead(actioninput);
+    actionstate = digitalRead(actioninput);
   }
   digitalWrite(actionactive, LOW);
 }

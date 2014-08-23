@@ -12,9 +12,9 @@ from subprocess import PIPE
 import RPi.GPIO as GPIO
 
 class Ports():
+    OPTO_1         = 17 # OUT
     RELAY_1        = 18 # OUT
     SMOKE_MACHINE  = 18 # OUT
-    OPTO_1         = 21 # OUT
     KAHUNA_SWITCH  = 22 # IN
     RELAY_2        = 23 # OUT
     KAHUNA_SLIDER  = 23 # OUT
@@ -75,7 +75,7 @@ class BubbleMachine(Action):
        
         self.soundfx.fx_start(SoundFxGenerator.BUBBLES) 
         self.ports.activate(Ports.BUBBLE_MACHINE)
-        time.sleep(180)
+        stop_event.wait(50)
         self.ports.deactivate(Ports.BUBBLE_MACHINE)
         self.soundfx.fx_stop(SoundFxGenerator.BUBBLES) 
 
@@ -108,7 +108,15 @@ class Bleeping(Action):
         logging.info("Bleep started")
         
         self.soundfx.fx_start(SoundFxGenerator.BLEEP) 
-        stop_event.wait(15)
+        stop_event.wait(10)
+        self.soundfx.fx_stop(SoundFxGenerator.BLEEP) 
+        stop_event.wait(2)
+        self.soundfx.fx_start(SoundFxGenerator.BLEEP) 
+        stop_event.wait(10)
+        self.soundfx.fx_stop(SoundFxGenerator.BLEEP) 
+        stop_event.wait(2)
+        self.soundfx.fx_start(SoundFxGenerator.BLEEP) 
+        stop_event.wait(10)
         self.soundfx.fx_stop(SoundFxGenerator.BLEEP) 
         
         logging.info("Bleep stopped")
@@ -121,24 +129,26 @@ class Kahuna(Action):
 
     def perform(self):
         logging.info("Kahuna started")
-        self.ports.activate(Ports.LIGHTS)
+        self.ports.activate(Ports.FRONT_LIGHTS)
         self.soundfx.fx_play(SoundFxGenerator.HORN) 
         stop_event.wait(10)
 
         self.ports.activate(Ports.SMOKE_MACHINE)
         self.soundfx.fx_start(SoundFxGenerator.MACHINE) 
-        stop.event.wait(5)
+        stop_event.wait(5)
  
         self.soundfx.fx_start(SoundFxGenerator.BUBBLES) 
         self.ports.activate(Ports.BUBBLE_MACHINE)
-        stop.event.wait(20)
+        stop_event.wait(7)
+        self.ports.activate(Ports.OPTO_1)
+        stop_event.wait(13)
 
         self.ports.deactivate(Ports.BUBBLE_MACHINE)
         self.soundfx.fx_stop(SoundFxGenerator.BUBBLES) 
-        self.soundfx.fx_play(SoundFxGenerator.HYDRAULICS) 
-        self.ports.deactivate(Ports.LIGHTS)
+        self.soundfx.fx_play(SoundFxGenerator.HYDRAULIC) 
+        self.ports.deactivate(Ports.FRONT_LIGHTS)
   
-        stop.event.wait(3)
+        stop_event.wait(3)
         
         self.ports.activate(Ports.KAHUNA_SLIDER)
         stop_event.wait(1)
@@ -163,6 +173,7 @@ class SoundFxGenerator():
     def __init__(self):
         # set audio output to the jack
         process = subprocess.Popen(["amixer", "cset", "numid=3", "1"] , stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        process = subprocess.Popen(["amixer", "sset", "PCM", "100"] , stdin=PIPE, stdout=PIPE, stderr=PIPE)
         process.wait()
         pygame.mixer.init()
         self.effect_siren = pygame.mixer.Sound("soundeffects/police_s.wav")
@@ -170,7 +181,7 @@ class SoundFxGenerator():
         self.effect_bleep = pygame.mixer.Sound("soundeffects/bleep_01.wav")
         self.effect_hydraulic = pygame.mixer.Sound("soundeffects/12906__swelk__hydraul1.wav") # 8.2 seconds
         self.effect_machine = pygame.mixer.Sound("soundeffects/30315__lg__industrial23.wav") # 1.3 seconds
-        self.effect_horn = pygame.mixer.Sound("soundeffects/244796__jarredgibb__war-of-the-worlds-horn-1.wav") # 14 sec
+        self.effect_horn = pygame.mixer.Sound("soundeffects/horn.wav") # 14 sec
 
     def cleanup(self):
         pygame.mixer.quit()
@@ -207,9 +218,6 @@ if __name__ == "__main__":
                         level=logging.DEBUG,
                         format='%(asctime)s %(message)s')
     
-    #logging.basicConfig(level=logging.DEBUG,
-    #                    format='%(asctime)s %(message)s')
-
     gpioPorts = Ports()
     soundfx = SoundFxGenerator()
     stop_event = threading.Event()
@@ -224,7 +232,7 @@ if __name__ == "__main__":
     kahuna = Kahuna(gpioPorts, stop_event, soundfx)
     
     lastAction = 0
-    randomDeltaTime = 30 * 60 # Seconds
+    randomDeltaTime = 120 # Seconds
     kahunaFlag = False
     kahunaStarted = False
     actionThread = None
@@ -251,6 +259,7 @@ if __name__ == "__main__":
                     logging.info("Kahuna still running, not clearing the flag")
                 else:
                     logging.info("Kahuna event cleared")
+                    gpioPorts.deactivate(Ports.OPTO_1)
                     kahunaStarted = False
                     kahunaFlag = False
             elif ((currentTime - lastAction) > randomDeltaTime) and not kahunaFlag:
